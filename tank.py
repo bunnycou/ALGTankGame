@@ -5,24 +5,23 @@ SCREEN_WIDTH = 500
 screen = turtle.Screen()
 screen.setup(SCREEN_HEIGHT, SCREEN_WIDTH)
 screen.tracer(0)
-tur = turtle.Turtle()
-tur.speed(0)
-tur.width(4)
-tur.hideturtle()
-tur.color(0,0,0)
+screen.colormode(255)
 
 class Tank:
-    def __init__(self):
-        pass
-
-    mxSpd = 3
-    acc = 0.05
-    rot = 90 #pointing up
-    rotspd = 3
-    spd = 0
-    posx = 0
-    posy = 0
-    size = 10
+    def __init__(self, color, x, y, r):
+        self.tur = turtle.Turtle()
+        self.tur.speed(0)
+        self.tur.width(3)
+        self.tur.hideturtle()
+        self.tur.color(color)
+        self.mxSpd = 3
+        self.acc = 0.05
+        self.rot = r #90 is up
+        self.rotspd = 5
+        self.spd = 0
+        self.posx = x
+        self.posy = y
+        self.size = 10
     
     def rotR(self):
         self.rot -= self.rotspd
@@ -50,18 +49,18 @@ class Tank:
         self.drawTurret(self.posx, self.posy, self.size)
         
     def drawBody(self, x, y, rad):
-        tur.penup()
-        tur.setpos(x+rad, y)
-        tur.setheading(90)
-        tur.pendown()
-        tur.circle(rad)
+        self.tur.penup()
+        self.tur.setpos(x+rad, y)
+        self.tur.setheading(90)
+        self.tur.pendown()
+        self.tur.circle(rad)
 
     def drawTurret(self, x, y, size):
-        tur.penup()
-        tur.setpos(x, y)
-        tur.setheading(self.rot)
-        tur.pendown()
-        tur.forward(size*1.5)
+        self.tur.penup()
+        self.tur.setpos(x, y)
+        self.tur.setheading(self.rot)
+        self.tur.pendown()
+        self.tur.forward(size*1.5)
 
     def collisionTickCheck(self):
         rightbound = (SCREEN_WIDTH/2)-(self.size*2)
@@ -79,7 +78,7 @@ class Tank:
             self.posy = botbound
 
     def tick(self):
-        tur.clear()
+        self.tur.clear()
         self.posx += cos(radians(self.rot))*self.spd
         self.posy += sin(radians(self.rot))*self.spd
         self.collisionTickCheck()
@@ -87,7 +86,9 @@ class Tank:
         screen.update()
 
 def main():
-    player = Tank()
+    player = Tank((0,0,255), 0,0,90)
+    enemy = Tank((255,0,0), 100,100, 0)
+    enemy.tick()
     player.tick()
     screen.onkeyrelease(player.slowdown, "Up")
     screen.onkeypress(player.speedup, "Up")

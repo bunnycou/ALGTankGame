@@ -1,7 +1,7 @@
 # ALGTankGame
 Tank Game for Spring 2024, CSET3150:001 Introduction to Algorithms
 
-### Here is how to download your branch onto your computer
+### Here is how to download your branch onto your computer using CLI commands
 `git clone -b noah https://github.com/bunnycou/ALGTankGame`
 
 Replace noah with your own name (collin, robby, xander)
@@ -15,7 +15,7 @@ This will commit all changes and add a message, typically used to describe what 
 `git commit -m "Updated files"`
 
 This will push your changes to your branch, origin is the repository, name is your name/name of the branch
-`git push origin name`
+`git push origin name` or for example `git push origin noah` is what I would do
 
 This will download your changes in case you work on multiple devices
 `git pull origin name`

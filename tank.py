@@ -10,13 +10,6 @@ screen.setup(SCREEN_HEIGHT, SCREEN_WIDTH)
 screen.tracer(0)
 screen.colormode(255)
 
-
-#   __  __          _____ _   _   _______       _   _ _  __
-#  |  \/  |   /\   |_   _| \ | | |__   __|/\   | \ | | |/ /
-#  | \  / |  /  \    | | |  \| |    | |  /  \  |  \| | ' / 
-#  | |\/| | / /\ \   | | | . ` |    | | / /\ \ | . ` |  <  
-#  | |  | |/ ____ \ _| |_| |\  |    | |/ ____ \| |\  | . \ 
-#  |_|  |_/_/    \_\_____|_| \_|    |_/_/    \_\_| \_|_|\_\
 # class for main tank (player and all tanks) that AI tank uses as parent
 class Tank:
     def __init__(self, color, x, y, r):
@@ -35,7 +28,9 @@ class Tank:
         # basic properties like speed, position, rotation
         self.driving = False
         self.rot = r #90 is up
-        self.rotspd = 10 # should be a divisor of 360
+        self.rotspd = 0 
+        self.basespdrot = 1 # should be a divisor of 360
+        self.rotating = False
         # self.spd = 0
         self.basespd = 0.25
         self.posx = x
@@ -62,12 +57,10 @@ class Tank:
     
     # functions to rotate right and left
     def rotR(self):
-        self.rot -= self.rotspd
-        self.tick([])
+        self.startRot(self.basespdrot*-1)
     
     def rotL(self):
-        self.rot += self.rotspd
-        self.tick([])
+        self.startRot(self.basespdrot)
 
     # functions to start moving and stop moving
     def start(self):
@@ -75,6 +68,13 @@ class Tank:
 
     def stop(self):
         self.driving = False
+
+    def startRot(self, spd):
+        self.rotating = True
+        self.rotspd = spd
+
+    def stopRot(self):
+        self.rotating = False
 
     # function called when you shoot
     def fire(self):
@@ -181,6 +181,8 @@ class Tank:
     # performs movememnt, drawing, and any collision checks
     def tick(self, AllTanks):
         self.tur.clear()
+        if self.rotating:
+            self.rot += self.rotspd
         if self.driving:
             spd = self.basespd * len(AllTanks)
             self.posx += cos(radians(self.rot))*spd
@@ -191,12 +193,6 @@ class Tank:
         self.draw()
         screen.update()
 
-#            _____   _______       _   _ _  __
-#      /\   |_   _| |__   __|/\   | \ | | |/ /
-#     /  \    | |      | |  /  \  |  \| | ' / 
-#    / /\ \   | |      | | / /\ \ | . ` |  <  
-#   / ____ \ _| |_     | |/ ____ \| |\  | . \ 
-#  /_/    \_\_____|    |_/_/    \_\_| \_|_|\_\
 # subclass of Tank for non player tanks
 class TankAI(Tank):
     def __init__(self, color, x, y, r):
@@ -256,10 +252,12 @@ def main():
     for tank in enemyTanks:
         AllTanks.append(tank)
     # register keybinds
-    screen.onkeyrelease(player.stop, "Up")
     screen.onkeypress(player.start, "Up")
+    screen.onkeyrelease(player.stop, "Up")
     screen.onkeypress(player.rotL, "Left")
+    screen.onkeyrelease(player.stopRot, "Left")
     screen.onkeypress(player.rotR, "Right")
+    screen.onkeyrelease(player.stopRot, "Right")
     screen.onkeyrelease(player.fire, "space")
     screen.listen()
     # main game loop

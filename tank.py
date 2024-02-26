@@ -208,10 +208,10 @@ class TankAI(Tank):
     def AI_rot(self, player): # rotate ai tank towards player
         goalRot = self.rotTank(player) # rotation that would face ai towards player
         print(goalRot, self.rot)
-        if self.rot > goalRot: # if need to rotate right without passing 0
+        if self.rot > goalRot+1: # if need to rotate right without passing 0
             lrotd = 360-self.rot+goalRot
             rrotd = self.rot-goalRot
-        elif self.rot < goalRot: # if need to rotate left without passing 0
+        elif self.rot < goalRot-1: # if need to rotate left without passing 0
             lrotd = goalRot-self.rot
             rrotd = self.rot+360-goalRot
         else: # if rotation is equal to the goal rotation

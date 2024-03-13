@@ -20,8 +20,6 @@ This will push your changes to your branch, origin is the repository, name is yo
 This will download your changes in case you work on multiple devices
 `git pull origin name`
 
-Your repository will contain a README.md file with this information, you can simply ignore it or delete it or update it, it will display on the github site with nice formatting (as you can see by going to https://github.com/bunnycou/ALGTankGame, the main branch has a README displaying)
-
-The main branch will be used to create our final file which we will just do manually. 
-This organization will allow us to all work independently and check what way of implementations we use so we can copy from each other and suggest improvements to others. 
-You don't have to do just one file in your repository, you can do many and any files that you want in case you have other py files you use for testing or demonstration or text files that you want displayed. 
+To get the latest changes from the main branch do
+`git rebase master`
+This will attempt to apply your commits on top of the latest main commit

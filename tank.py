@@ -10,6 +10,80 @@ screen.setup(SCREEN_HEIGHT, SCREEN_WIDTH)
 screen.tracer(0)
 screen.colormode(255)
 
+class Bullet:
+    def __init__(self, x, y, rot, color):
+        self.tur = turtle.Turtle()
+        self.tur.speed(0)
+        self.tur.width(4)
+        self.tur.hideturtle()
+        self.tur.color(color)
+        self.posx = x
+        self.posy = y
+        self.rot = rot
+        self.bspd = 1
+        self.size = 10
+        self.firing = True
+
+    def spdx(self, rot, spd):
+        return cos(radians(rot))*spd
+    
+    def spdy(self, rot, spd):
+        return sin(radians(rot))*spd
+
+    def draw(self):
+        self.tur.penup()
+        self.tur.goto(self.posx, self.posy)
+        self.tur.setheading(self.rot)
+        self.tur.pendown()
+        self.tur.forward(self.size)
+
+    def distTank(self, posx, posy, tank):
+        xterm = (posx-tank.posx)**2
+        yterm = (posy-tank.posy)**2
+        return sqrt(xterm+yterm)
+
+    def screenCollision(self):
+        rightbound = (SCREEN_WIDTH/2)-(self.size*2)
+        leftbound = ((SCREEN_WIDTH/2)*-1)+self.size
+        if self.posx > rightbound: # off the right
+            return True
+        if self.posx < leftbound: # off the left
+            return True
+
+        topbound = (SCREEN_HEIGHT/2)-self.size
+        botbound = ((SCREEN_HEIGHT/2)*-1)+(self.size*2)
+        if self.posy > topbound: # off the top
+            return True
+        if self.posy < botbound: # off the bottom
+            return True
+        
+        return False
+
+    def tankCollision(self, AllTanks):
+        testx = self.posx + self.spdx(self.rot, self.size)
+        testy = self.posy + self.spdy(self.rot, self.size)
+        for tank in AllTanks:
+            if self.distTank(testx, testy, tank) < tank.size:
+                return tank
+        return False
+
+    def tick(self, AllTanks):
+        self.tur.clear()
+        if self.firing:
+            self.posx += self.spdx(self.rot, self.bspd)
+            self.posy += self.spdy(self.rot, self.bspd)
+
+            if self.screenCollision(): 
+                self.firing = False 
+                return
+
+            if self.tankCollision(AllTanks): 
+                self.firing = False
+                return
+
+            self.draw()
+            
+
 # class for main tank (player and all tanks) that AI tank uses as parent
 class Tank:
     def __init__(self, color, x, y, r):
@@ -19,12 +93,10 @@ class Tank:
         self.tur.width(3)
         self.tur.hideturtle()
         self.tur.color(color)
-        # turtle properties for drawing bullet
-        self.btur = turtle.Turtle()
-        self.btur.speed(0)
-        self.btur.width(4)
-        self.btur.hideturtle()
-        self.btur.color(color)
+        # list to store fired bullets and cooldown between shots
+        self.bullets = list()
+        self.cooldown = 0
+        self.basecd = 100
         # basic properties like speed, position, rotation
         self.driving = False
         self.rot = r #90 is up
@@ -36,14 +108,8 @@ class Tank:
         self.posx = x
         self.posy = y
         self.size = 10
-        # properties for the bullets
-        self.firing = False
-        self.bposx = 0
-        self.bposy = 0
-        self.brot = 0
-        self.bspd = 1
-        self.bsize = 6
-        self.bcd = 100
+
+        self.color = color
 
     def turretSize(self):
         return self.size*1.5
@@ -78,13 +144,11 @@ class Tank:
 
     # function called when you shoot
     def fire(self):
-        if self.firing:
-            return # do not shoot if already shooting
+        if self.cooldown != 0:
+            return # do not shoot if on cooldown
         else:
-            self.firing = True
-            self.bposx = self.posx + self.spdx(self.rot, self.turretSize())
-            self.bposy = self.posy + self.spdy(self.rot, self.turretSize())
-            self.brot = self.rot
+            self.bullets.append(Bullet(self.posx, self.posy, self.rot, self.color))
+            self.cooldown = self.basecd
     
     # calls other functions to draw the full tank
     def draw(self):
@@ -104,38 +168,6 @@ class Tank:
         self.tur.setheading(self.rot)
         self.tur.pendown()
         self.tur.forward(self.turretSize())
-
-    def drawBullet(self):
-        self.btur.clear()
-        self.btur.penup()
-        self.btur.goto(self.bposx,self.bposy)
-        self.btur.setheading(self.brot)
-        self.btur.pendown()
-        self.btur.forward(self.bsize)
-
-    # performs all of the bullet movement and collision
-    def bulletTick(self):
-        self.bposx += self.spdx(self.brot, self.bspd)
-        self.bposy += self.spdy(self.brot, self.bspd)
-
-        rightbound = (SCREEN_WIDTH/2)-(self.size*2)
-        leftbound = ((SCREEN_WIDTH/2)*-1)+self.size
-        if self.bposx > rightbound: # off the right
-            self.firing = False
-        if self.bposx < leftbound: # off the left
-            self.firing = False
-
-        topbound = (SCREEN_HEIGHT/2)-self.size
-        botbound = ((SCREEN_HEIGHT/2)*-1)+(self.size*2)
-        if self.bposy > topbound: # off the top
-            self.firing = False
-        if self.bposy < botbound: # off the bottom
-            self.firing = False
-
-        if self.firing:
-            self.drawBullet()
-        else:
-            self.btur.clear()
 
     # util functions for finding distance/rotation between tank and self
     def distTank(self, tank):
@@ -178,6 +210,24 @@ class Tank:
                 self.posx += self.spdx(rot, spd)
                 self.posy += self.spdy(rot, spd)
 
+    def sortDistAI(self, AllTanks):
+        tanksDist = list()
+        tanksOrder = [_ for _ in range(1, len(AllTanks)+1)]
+
+        for i in range(len(AllTanks)):
+            tanksDist.append(self.distTank(AllTanks[i]))
+
+        unsorted = True
+        while unsorted:
+            unsorted = False
+            for i in range(len(AllTanks)-1):
+                if tanksDist[i] > tanksDist[i+1]:
+                    tanksDist[i], tanksDist[i+1] = tanksDist[i+1], tanksDist[i]
+                    tanksOrder[i], tanksOrder[i+1] = tanksOrder[i+1], tanksOrder[i]
+                    unsorted = True
+        
+        return tanksDist, tanksOrder
+
     # performs movememnt, drawing, and any collision checks
     def tick(self, AllTanks):
         self.tur.clear()
@@ -187,18 +237,28 @@ class Tank:
             spd = self.basespd * len(AllTanks)
             self.posx += cos(radians(self.rot))*spd
             self.posy += sin(radians(self.rot))*spd
-        if self.firing:
-            self.bulletTick()
+        if self.cooldown > 0:
+            self.cooldown -= 1
+        # print(self.bullets)
+        if len(self.bullets) > 0:
+            for bullet in self.bullets:
+                bullet.tick(AllTanks)
+                if not bullet.firing:
+                    self.bullets.remove(bullet)
         self.collisionTickCheck(AllTanks)
+        tanksDist, tanksOrder = self.sortDistAI(AllTanks)
+        print("Tanks in Distance Order")
+        for i in range(len(tanksDist)):
+            print(tanksOrder[i], tanksDist[i])
         self.draw()
-        screen.update()
 
 # subclass of Tank for non player tanks
 class TankAI(Tank):
-    def __init__(self, color, x, y, r):
+    def __init__(self, color, x, y, r, num):
         super(TankAI, self).__init__(color, x, y, r)
         self.rotspd = 0.2
         self.basespd = 0.1
+        self.id = num
 
     def AI_drive(self, player): # drive
         self.start()
@@ -207,7 +267,6 @@ class TankAI(Tank):
     
     def AI_rot(self, player): # rotate ai tank towards player
         goalRot = self.rotTank(player) # rotation that would face ai towards player
-        print(goalRot, self.rot)
         if self.rot > goalRot+1: # if need to rotate right without passing 0
             lrotd = 360-self.rot+goalRot
             rrotd = self.rot-goalRot
@@ -225,7 +284,7 @@ class TankAI(Tank):
         # correct rotation to be between 0-360
         if self.rot > 360: self.rot-=360
         if self.rot < 0: self.rot+=360
-
+    
     def tick(self, AllTanks, player):
         self.tur.clear()
         self.AI_rot(player) # rotate tank towards player
@@ -236,7 +295,6 @@ class TankAI(Tank):
             self.posy += sin(radians(self.rot))*spd
         self.collisionTickCheck(AllTanks)
         self.draw()
-        screen.update()
 
 # where the program starts
 def main():
@@ -244,8 +302,8 @@ def main():
     player = Tank((0,0,255), 0,0,90)
     # create enemy tanks
     enemyTanks = list()
-    enemyTanks.append(TankAI((255,0,0), -100,-100,90))
-    enemyTanks.append(TankAI((255,0,0), 100,100,90))
+    enemyTanks.append(TankAI((255,0,0), -100,-100,90, 1))
+    enemyTanks.append(TankAI((255,0,0), 100,100,90, 2))
     # all tanks list
     AllTanks = list()
     AllTanks.append(player)
@@ -265,6 +323,7 @@ def main():
         player.tick(AllTanksbutThisOne(AllTanks, player))
         for tank in enemyTanks:
             tank.tick(AllTanksbutThisOne(AllTanks, tank), player)
+        screen.update()
 
 def AllTanksbutThisOne(AllTanks, tank):
     return [t for t in AllTanks if t != tank]

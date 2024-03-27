@@ -21,5 +21,5 @@ This will download your changes in case you work on multiple devices
 `git pull origin name`
 
 To get the latest changes from the main branch do
-`git rebase master`
+`git rebase main`
 This will attempt to apply your commits on top of the latest main commit

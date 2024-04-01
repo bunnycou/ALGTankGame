@@ -26,7 +26,6 @@ class Grid:
     
     def getGsize(self):
         return self.gsize
-    
 
     def toggle(self):
         self.enabled = not self.enabled
@@ -79,6 +78,8 @@ class Grid:
                         self.tur.penup()
                 
     def gridCoords(self, xcoord, ycoord):
+        if not self.enabled:
+            return
         for y in range(self.gsize):
             for x in range(self.gsize):
                 if x == xcoord and y == ycoord:
@@ -302,28 +303,20 @@ class Tank:
                 self.posy += self.spdy(rot, spd)
                 
         #Check for obstacle collision
-        gridArray = grid.getGridArray()
-        gSize = grid.getGsize()
-        countY = 0
-        for row in gridArray:
-            countX = 1
-            countY += 1
-            for box in row:
-                if box:
-                    boxRB = -(SCREEN_WIDTH / gSize) + (SCREEN_WIDTH * countX) / gSize
-                    boxLB = -(SCREEN_WIDTH / gSize) + (SCREEN_WIDTH * (countX - 1)) / gSize
-                    boxTB = SCREEN_HEIGHT / gSize  - (SCREEN_HEIGHT * (countY - 1)) / gSize
-                    boxBB = SCREEN_HEIGHT / gSize  - (SCREEN_HEIGHT * countY) / gSize
-                    if self.posx < boxRB and boxRB != SCREEN_WIDTH / 2 and self.posy > boxBB and self.posy < boxTB: # grid box right bound    
-                        self.posx = boxRB
-                    if self.posx > boxLB and boxLB != -(SCREEN_WIDTH / 2) and self.posy > boxBB and self.posy < boxTB: # grid box left bound
-                        self.posx = boxLB
-                    if self.posy > boxTB and boxTB != (SCREEN_HEIGHT / 2) and self.posx > boxRB and self.posx < boxLB: # grid box top bound
-                        self.posy = boxTB
-                    if self.posy < boxBB and boxBB != -(SCREEN_HEIGHT / 2) and self.posx > boxRB and self.posx < boxLB : # grid box bottom bound
-                        self.posy = boxBB
-                countX += 1
-                    
+        if grid.enabled:
+            gridArray = grid.getGridArray()
+            gSize = grid.getGsize()
+            for y in range(gSize):
+                row = gridArray[y]
+                for x in range(gSize):
+                    box = row[x]
+                    if box:
+                        boxLB = -(SCREEN_WIDTH/gSize) + ((SCREEN_WIDTH/gSize)*(x-1))
+                        boxRB = -(SCREEN_WIDTH/gSize) + ((SCREEN_WIDTH/gSize)*x)
+                        boxTB = (SCREEN_HEIGHT/gSize) + ((SCREEN_HEIGHT/gSize)*(y-1))
+                        boxBB = (SCREEN_HEIGHT/gSize) + ((SCREEN_HEIGHT/gSize)*y)
+                        if self.posx > boxLB and self.posx < boxRB and self.posy > boxRB and self.posy < boxTB:
+                            print("In Box", x, y)
 
     def sortDistAI(self, AllTanks):
         tanksDist = list()

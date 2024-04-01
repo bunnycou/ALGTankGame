@@ -1,3 +1,6 @@
+import math
+from pickle import TRUE
+from re import S
 import turtle
 from math import sin, cos, atan2, radians, degrees, sqrt
 # constants for screen size
@@ -9,6 +12,94 @@ screen = turtle.Screen()
 screen.setup(SCREEN_HEIGHT, SCREEN_WIDTH)
 screen.tracer(0)
 screen.colormode(255)
+
+class Grid:
+    def __init__(self):
+        self.tur = turtle.Turtle()
+        self.tur.hideturtle()
+        self.enabled = False
+        self.gsize = 2
+        self.gridArray = []
+        
+    def getGridArray(self):
+        return self.gridArray
+    
+    def getGsize(self):
+        return self.gsize
+    
+
+    def toggle(self):
+        self.enabled = not self.enabled
+        self.gridArray = [[False for x in range(self.gsize)] for y in range(self.gsize)]
+
+    def sizeInc(self):
+        if self.enabled:
+            self.gsize = self.gsize + 1
+            self.gridArray.clear()
+            self.gridArray = [[False for x in range(self.gsize)] for y in range(self.gsize)]
+
+    def sizeDec(self):
+        if self.enabled and self.gsize > 2:
+            self.gsize = self.gsize - 1
+            self.gridArray.clear()
+            self.gridArray = [[False for x in range(self.gsize)] for y in range(self.gsize)]
+   
+    def draw(self):
+        for i in range(self.gsize + 1):
+            self.tur.penup()
+            self.tur.goto(-(SCREEN_WIDTH / 2), (i * 500 / self.gsize) - 250)
+            self.tur.setheading(0)
+            self.tur.pendown()
+            self.tur.fd(SCREEN_WIDTH)
+            self.tur.penup()
+            self.tur.goto((i * 500 / self.gsize) - 250, SCREEN_HEIGHT / 2)
+            self.tur.setheading(270)
+            self.tur.pendown()
+            self.tur.fd(SCREEN_HEIGHT)
+            self.tur.penup()
+            ycoord = 0
+            rowCount = 0
+            for x in self.gridArray:
+                rowCount += 1
+                xcoord = -(SCREEN_WIDTH / 2)
+                if rowCount == 1:
+                    ycoord += SCREEN_HEIGHT / 2
+                else:
+                    ycoord -= SCREEN_HEIGHT / self.gsize
+                for y in x:
+                    xcoord += SCREEN_WIDTH / self.gsize
+                    if y:
+                        self.tur.goto(xcoord, ycoord)
+                        self.tur.pendown()
+                        self.tur.begin_fill()
+                        for d in range(4):
+                            self.tur.forward(SCREEN_WIDTH / self.gsize)
+                            self.tur.right(90)
+                        self.tur.end_fill()
+                        self.tur.penup()
+                
+    def gridCoords(self, xcoord, ycoord):
+        for y in range(self.gsize):
+            for x in range(self.gsize):
+                if x == xcoord and y == ycoord:
+                    self.gridArray[y][x] = not self.gridArray[y][x]
+        for row in self.gridArray:
+            print(row)
+
+    def handleClick(self, x, y):
+        n = self.gsize
+        m = SCREEN_WIDTH / n
+        w = SCREEN_HEIGHT / n
+        x+=(SCREEN_WIDTH/2)
+        y-=(SCREEN_HEIGHT/2)
+        y*=-1
+        self.gridCoords(math.floor(x/m), math.floor(y/w))
+        print("Clicked at", x, y)
+    
+    def gridTick(self):
+        self.tur.clear()
+        if self.enabled:
+            self.draw()
 
 class Bullet:
     def __init__(self, x, y, rot, color):
@@ -26,7 +117,7 @@ class Bullet:
 
     def spdx(self, rot, spd):
         return cos(radians(rot))*spd
-    
+   
     def spdy(self, rot, spd):
         return sin(radians(rot))*spd
 
@@ -56,7 +147,7 @@ class Bullet:
             return True
         if self.posy < botbound: # off the bottom
             return True
-        
+       
         return False
 
     def tankCollision(self, AllTanks):
@@ -73,16 +164,16 @@ class Bullet:
             self.posx += self.spdx(self.rot, self.bspd)
             self.posy += self.spdy(self.rot, self.bspd)
 
-            if self.screenCollision(): 
-                self.firing = False 
+            if self.screenCollision():
+                self.firing = False
                 return
 
-            if self.tankCollision(AllTanks): 
+            if self.tankCollision(AllTanks):
                 self.firing = False
                 return
 
             self.draw()
-            
+           
 
 # class for main tank (player and all tanks) that AI tank uses as parent
 class Tank:
@@ -100,7 +191,7 @@ class Tank:
         # basic properties like speed, position, rotation
         self.driving = False
         self.rot = r #90 is up
-        self.rotspd = 0 
+        self.rotspd = 0
         self.basespdrot = 1 # should be a divisor of 360
         self.rotating = False
         # self.spd = 0
@@ -113,18 +204,18 @@ class Tank:
 
     def turretSize(self):
         return self.size*1.5
-    
+   
     # util functions for speed of tank and bullet
     def spdx(self, rot, spd):
         return cos(radians(rot))*spd
-    
+   
     def spdy(self, rot, spd):
         return sin(radians(rot))*spd
-    
+   
     # functions to rotate right and left
     def rotR(self):
         self.startRot(self.basespdrot*-1)
-    
+   
     def rotL(self):
         self.startRot(self.basespdrot)
 
@@ -149,12 +240,12 @@ class Tank:
         else:
             self.bullets.append(Bullet(self.posx, self.posy, self.rot, self.color))
             self.cooldown = self.basecd
-    
+   
     # calls other functions to draw the full tank
     def draw(self):
         self.drawBody()
         self.drawTurret()
-        
+       
     def drawBody(self):
         self.tur.penup()
         self.tur.setpos(self.posx+self.size, self.posy)
@@ -186,7 +277,7 @@ class Tank:
         return degrees(atan2(yterm, xterm))
 
     # checks if tank is hitting anything every tick
-    def collisionTickCheck(self, AllTanks):
+    def collisionTickCheck(self, AllTanks, grid):
         #check screen border collisions
         rightbound = (SCREEN_WIDTH/2)-(self.size*2)
         leftbound = ((SCREEN_WIDTH/2)*-1)+self.size
@@ -209,6 +300,30 @@ class Tank:
                 rot = self.rotCollisionTank(tank)
                 self.posx += self.spdx(rot, spd)
                 self.posy += self.spdy(rot, spd)
+                
+        #Check for obstacle collision
+        gridArray = grid.getGridArray()
+        gSize = grid.getGsize()
+        countY = 0
+        for row in gridArray:
+            countX = 1
+            countY += 1
+            for box in row:
+                if box:
+                    boxRB = -(SCREEN_WIDTH / gSize) + (SCREEN_WIDTH * countX) / gSize
+                    boxLB = -(SCREEN_WIDTH / gSize) + (SCREEN_WIDTH * (countX - 1)) / gSize
+                    boxTB = SCREEN_HEIGHT / gSize  - (SCREEN_HEIGHT * (countY - 1)) / gSize
+                    boxBB = SCREEN_HEIGHT / gSize  - (SCREEN_HEIGHT * countY) / gSize
+                    if self.posx < boxRB and boxRB != SCREEN_WIDTH / 2 and self.posy > boxBB and self.posy < boxTB: # grid box right bound    
+                        self.posx = boxRB
+                    if self.posx > boxLB and boxLB != -(SCREEN_WIDTH / 2) and self.posy > boxBB and self.posy < boxTB: # grid box left bound
+                        self.posx = boxLB
+                    if self.posy > boxTB and boxTB != (SCREEN_HEIGHT / 2) and self.posx > boxRB and self.posx < boxLB: # grid box top bound
+                        self.posy = boxTB
+                    if self.posy < boxBB and boxBB != -(SCREEN_HEIGHT / 2) and self.posx > boxRB and self.posx < boxLB : # grid box bottom bound
+                        self.posy = boxBB
+                countX += 1
+                    
 
     def sortDistAI(self, AllTanks):
         tanksDist = list()
@@ -225,11 +340,11 @@ class Tank:
                     tanksDist[i], tanksDist[i+1] = tanksDist[i+1], tanksDist[i]
                     tanksOrder[i], tanksOrder[i+1] = tanksOrder[i+1], tanksOrder[i]
                     unsorted = True
-        
+       
         return tanksDist, tanksOrder
 
     # performs movememnt, drawing, and any collision checks
-    def tick(self, AllTanks):
+    def tick(self, AllTanks, grid):
         self.tur.clear()
         if self.rotating:
             self.rot += self.rotspd
@@ -245,11 +360,11 @@ class Tank:
                 bullet.tick(AllTanks)
                 if not bullet.firing:
                     self.bullets.remove(bullet)
-        self.collisionTickCheck(AllTanks)
+        self.collisionTickCheck(AllTanks, grid)
         tanksDist, tanksOrder = self.sortDistAI(AllTanks)
-        print("Tanks in Distance Order")
-        for i in range(len(tanksDist)):
-            print(tanksOrder[i], tanksDist[i])
+        #print("Tanks in Distance Order")
+        #for i in range(len(tanksDist)):
+            #print(tanksOrder[i], tanksDist[i])
         self.draw()
 
 # subclass of Tank for non player tanks
@@ -264,7 +379,7 @@ class TankAI(Tank):
         self.start()
         if self.distTank(player) < 75:
             self.stop()
-    
+   
     def AI_rot(self, player): # rotate ai tank towards player
         goalRot = self.rotTank(player) # rotation that would face ai towards player
         if self.rot > goalRot+1: # if need to rotate right without passing 0
@@ -284,8 +399,8 @@ class TankAI(Tank):
         # correct rotation to be between 0-360
         if self.rot > 360: self.rot-=360
         if self.rot < 0: self.rot+=360
-    
-    def tick(self, AllTanks, player):
+   
+    def tick(self, AllTanks, player, grid):
         self.tur.clear()
         self.AI_rot(player) # rotate tank towards player
         self.AI_drive(player)
@@ -293,7 +408,7 @@ class TankAI(Tank):
             spd = self.basespd * len(AllTanks)
             self.posx += cos(radians(self.rot))*spd
             self.posy += sin(radians(self.rot))*spd
-        self.collisionTickCheck(AllTanks)
+        self.collisionTickCheck(AllTanks, grid)
         self.draw()
 
 # where the program starts
@@ -304,6 +419,8 @@ def main():
     enemyTanks = list()
     enemyTanks.append(TankAI((255,0,0), -100,-100,90, 1))
     enemyTanks.append(TankAI((255,0,0), 100,100,90, 2))
+    # create grid
+    grid = Grid()
     # all tanks list
     AllTanks = list()
     AllTanks.append(player)
@@ -317,12 +434,17 @@ def main():
     screen.onkeypress(player.rotR, "Right")
     screen.onkeyrelease(player.stopRot, "Right")
     screen.onkeyrelease(player.fire, "space")
+    screen.onkeyrelease(grid.toggle, "g")
+    screen.onkeyrelease(grid.sizeDec, "-")
+    screen.onkeyrelease(grid.sizeInc, "=")
+    screen.onscreenclick(grid.handleClick)
     screen.listen()
     # main game loop
     while True:
-        player.tick(AllTanksbutThisOne(AllTanks, player))
+        grid.gridTick()
+        player.tick(AllTanksbutThisOne(AllTanks, player), grid)
         for tank in enemyTanks:
-            tank.tick(AllTanksbutThisOne(AllTanks, tank), player)
+            tank.tick(AllTanksbutThisOne(AllTanks, tank), player, grid)
         screen.update()
 
 def AllTanksbutThisOne(AllTanks, tank):

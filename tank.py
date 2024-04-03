@@ -313,8 +313,8 @@ class Tank:
                     if box:
                         boxLB = -(SCREEN_WIDTH/gSize) + ((SCREEN_WIDTH/gSize)*(x-1))
                         boxRB = -(SCREEN_WIDTH/gSize) + ((SCREEN_WIDTH/gSize)*x)
-                        boxTB = (SCREEN_HEIGHT/gSize) + ((SCREEN_HEIGHT/gSize)*(y-1))
-                        boxBB = (SCREEN_HEIGHT/gSize) + ((SCREEN_HEIGHT/gSize)*y)
+                        boxTB = (SCREEN_HEIGHT/gSize) + -((SCREEN_HEIGHT/gSize)*(y-1))
+                        boxBB = (SCREEN_HEIGHT/gSize) + -((SCREEN_HEIGHT/gSize)*y)
                         if self.posx > boxLB and self.posx < boxRB and self.posy > boxRB and self.posy < boxTB:
                             print("In Box", x, y)
 

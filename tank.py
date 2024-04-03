@@ -315,7 +315,7 @@ class Tank:
                         boxRB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x+1))
                         boxTB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y))
                         boxBB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y+1))
-                        if self.posx > boxLB and self.posx < boxRB and self.posy > boxRB and self.posy < boxTB:
+                        if self.posx > boxLB and self.posx < boxRB and self.posy > boxBB and self.posy < boxTB:
                             print("In Box", x, y)
 
     def sortDistAI(self, AllTanks):

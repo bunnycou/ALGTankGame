@@ -1,5 +1,5 @@
 import math
-from pickle import TRUE
+import pickle
 from re import S
 import turtle
 from math import sin, cos, atan2, radians, degrees, sqrt

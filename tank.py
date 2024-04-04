@@ -30,19 +30,41 @@ class Grid:
     def toggle(self):
         self.enabled = not self.enabled
         self.gridArray = [[False for x in range(self.gsize)] for y in range(self.gsize)]
+        self.pickleLoad("grid.pickle")
+        print(self.gridArray, self.gsize)
 
     def sizeInc(self):
         if self.enabled:
             self.gsize = self.gsize + 1
             self.gridArray.clear()
             self.gridArray = [[False for x in range(self.gsize)] for y in range(self.gsize)]
+            self.pickleSave("grid.pickle")
 
     def sizeDec(self):
         if self.enabled and self.gsize > 2:
             self.gsize = self.gsize - 1
             self.gridArray.clear()
             self.gridArray = [[False for x in range(self.gsize)] for y in range(self.gsize)]
+            self.pickleSave("grid.pickle")
    
+    def pickleSave(self, filename):
+        pickleData = { "obstacles" : self.gridArray, "size" : self.gsize }
+        try:
+            with open(filename, "wb") as file:
+                pickle.dump(pickleData, file)
+                print("saved to ", filename, ".pickle")
+        except FileNotFoundError:
+            print("File", filename, "does not exist.")
+
+    def pickleLoad(self, filename):
+        try:
+            with open(filename, "rb") as file:
+                data = pickle.load(file)
+                self.gsize = data["size"]
+                self.gridArray = data["obstacles"]
+        except FileNotFoundError:
+            print("File", filename, "does not exist.")
+
     def draw(self):
         for i in range(self.gsize + 1):
             self.tur.penup()
@@ -96,12 +118,12 @@ class Grid:
         y*=-1
         self.gridCoords(math.floor(x/m), math.floor(y/w))
         print("Clicked at", x, y)
+        self.pickleSave("grid.pickle")
     
     def gridTick(self):
         self.tur.clear()
         if self.enabled:
             self.draw()
-
 class Bullet:
     def __init__(self, x, y, rot, color):
         self.tur = turtle.Turtle()
@@ -317,6 +339,35 @@ class Tank:
                         boxBB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y+1))
                         if self.posx > boxLB and self.posx < boxRB and self.posy > boxBB and self.posy < boxTB:
                             print("In Box", x, y)
+                        """
+                        closestCord = 0
+                        onXCord = bool
+                        onYCord = bool
+                        sizeComp = [0,1,2,3]
+                        sizeComp[0] = boxLB - self.posx
+                        sizeComp[1] = boxRB + self.posx
+                        sizeComp[2] = boxTB + self.posy
+                        sizeComp[3] = boxBB - self.posy
+                        if self.posx > boxLB and self.posx < boxRB and self.posy > boxRB and self.posy < boxTB:
+                            print("In Box", x, y)
+                            for i in sizeComp:
+                                if sizeComp[i] == sizeComp[0]:
+                                    closestCord = sizeComp[i]
+                                    pass
+                                if sizeComp[i] < sizeComp[i-1]:
+                                    closestCord = sizeComp[i]
+                                    if i == 0 or i == 2:
+                                        onXCord = True
+                                        onYCord = False
+                                    else:
+                                        onXCord = False
+                                        onYCord = True
+                            if onXCord == True:
+                                self.posx = closestCord
+                            else:
+                                self.posy = closestCord
+                            """
+
 
     def sortDistAI(self, AllTanks):
         tanksDist = list()
@@ -428,8 +479,8 @@ def main():
     screen.onkeyrelease(player.stopRot, "Right")
     screen.onkeyrelease(player.fire, "space")
     screen.onkeyrelease(grid.toggle, "g")
-    screen.onkeyrelease(grid.sizeDec, "-")
-    screen.onkeyrelease(grid.sizeInc, "=")
+    screen.onkeyrelease(grid.sizeDec, "minus")
+    screen.onkeyrelease(grid.sizeInc, "equal")
     screen.onscreenclick(grid.handleClick)
     screen.listen()
     # main game loop

@@ -100,8 +100,6 @@ class Grid:
                         self.tur.penup()
                 
     def gridCoords(self, xcoord, ycoord):
-        if not self.enabled:
-            return
         for y in range(self.gsize):
             for x in range(self.gsize):
                 if x == xcoord and y == ycoord:
@@ -110,6 +108,8 @@ class Grid:
             print(row)
 
     def handleClick(self, x, y):
+        if not self.enabled:
+            return
         n = self.gsize
         m = SCREEN_WIDTH / n
         w = SCREEN_HEIGHT / n
@@ -180,8 +180,25 @@ class Bullet:
             if self.distTank(testx, testy, tank) < tank.size:
                 return tank
         return False
+    
+    def obstacleCollision(self, grid):
+        if grid.enabled:
+            gridArray = grid.getGridArray()
+            gSize = grid.getGsize()
+            for y in range(gSize):
+                row = gridArray[y]
+                for x in range(gSize):
+                    box = row[x]
+                    if box:
+                        boxLB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x)) - self.size
+                        boxRB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x+1)) + self.size
+                        boxTB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y)) + self.size
+                        boxBB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y+1)) - self.size
+                        test = [boxLB, boxRB, boxTB, boxBB]
+                        if self.posx > boxLB and self.posx < boxRB and self.posy > boxBB and self.posy < boxTB:
+                            return True
 
-    def tick(self, AllTanks):
+    def tick(self, AllTanks, grid):
         self.tur.clear()
         if self.firing:
             self.posx += self.spdx(self.rot, self.bspd)
@@ -194,7 +211,11 @@ class Bullet:
             if self.tankCollision(AllTanks):
                 self.firing = False
                 return
-
+            
+            if self.obstacleCollision(grid):
+                self.firing = False
+                return
+            
             self.draw()
            
 
@@ -333,42 +354,35 @@ class Tank:
                 for x in range(gSize):
                     box = row[x]
                     if box:
-                        boxLB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x))
-                        boxRB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x+1))
-                        boxTB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y))
-                        boxBB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y+1))
+                        boxLB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x)) - self.size
+                        boxRB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x+1)) + self.size
+                        boxTB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y)) + self.size
+                        boxBB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y+1)) - self.size
+                        test = [boxLB, boxRB, boxTB, boxBB]
                         if self.posx > boxLB and self.posx < boxRB and self.posy > boxBB and self.posy < boxTB:
                             print("In Box", x, y)
-                        """
-                        closestCord = 0
-                        onXCord = bool
-                        onYCord = bool
-                        sizeComp = [0,1,2,3]
-                        sizeComp[0] = boxLB - self.posx
-                        sizeComp[1] = boxRB + self.posx
-                        sizeComp[2] = boxTB + self.posy
-                        sizeComp[3] = boxBB - self.posy
-                        if self.posx > boxLB and self.posx < boxRB and self.posy > boxRB and self.posy < boxTB:
-                            print("In Box", x, y)
-                            for i in sizeComp:
-                                if sizeComp[i] == sizeComp[0]:
-                                    closestCord = sizeComp[i]
-                                    pass
-                                if sizeComp[i] < sizeComp[i-1]:
-                                    closestCord = sizeComp[i]
-                                    if i == 0 or i == 2:
-                                        onXCord = True
-                                        onYCord = False
-                                    else:
-                                        onXCord = False
-                                        onYCord = True
-                            if onXCord == True:
-                                self.posx = closestCord
-                            else:
-                                self.posy = closestCord
-                            """
-
-
+                            dist = 100
+                            xaxis = False
+                            yaxis = False
+                            pos = 0
+                            for dummy in range(len(test)):
+                                if dummy < 2:
+                                    hold = abs(test[dummy] - self.posx)
+                                    if hold < dist:
+                                        dist = abs(test[dummy] - self.posx)
+                                        pos = test[dummy]
+                                        xaxis = True
+                                else:
+                                    hold = abs(test[dummy] - self.posy)
+                                    if hold < dist:
+                                        dist = abs(test[dummy] - self.posy)
+                                        pos = test[dummy]
+                                        yaxis = True
+                            if xaxis and not yaxis:
+                                self.posx = pos
+                            if yaxis:
+                                self.posy = pos
+                                    
     def sortDistAI(self, AllTanks):
         tanksDist = list()
         tanksOrder = [_ for _ in range(1, len(AllTanks)+1)]
@@ -401,7 +415,7 @@ class Tank:
         # print(self.bullets)
         if len(self.bullets) > 0:
             for bullet in self.bullets:
-                bullet.tick(AllTanks)
+                bullet.tick(AllTanks, grid)
                 if not bullet.firing:
                     self.bullets.remove(bullet)
         self.collisionTickCheck(AllTanks, grid)

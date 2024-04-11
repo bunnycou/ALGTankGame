@@ -1,8 +1,5 @@
-import math
-import pickle
-from re import S
-import turtle
-from math import sin, cos, atan2, radians, degrees, sqrt
+import math, pickle, turtle
+
 # constants for screen size
 SCREEN_HEIGHT = 500
 SCREEN_WIDTH = 500
@@ -18,66 +15,55 @@ class Grid:
         self.tur = turtle.Turtle()
         self.tur.hideturtle()
         self.enabled = False
-        self.gsize = 2
+        self.gridSize = 2
         self.gridArray = []
-        
-    def getGridArray(self):
-        return self.gridArray
-    
-    def getGsize(self):
-        return self.gsize
 
     def toggle(self):
         self.enabled = not self.enabled
-        self.gridArray = [[False for x in range(self.gsize)] for y in range(self.gsize)]
-        self.pickleLoad("grid.pickle")
-        print(self.gridArray, self.gsize)
+        self.gridArray = [[False for x in range(self.gridSize)] for y in range(self.gridSize)]
+        self.pickleLoad()
 
     def sizeInc(self):
         if self.enabled:
-            self.gsize = self.gsize + 1
+            self.gridSize += 1
             self.gridArray.clear()
-            self.gridArray = [[False for x in range(self.gsize)] for y in range(self.gsize)]
-            self.pickleSave("grid.pickle")
-
+            self.gridArray = [[False for x in range(self.gridSize)] for y in range(self.gridSize)]
+            self.pickleSave()
     def sizeDec(self):
-        if self.enabled and self.gsize > 2:
-            self.gsize = self.gsize - 1
+        if self.enabled and self.gridSize > 2:
+            self.gridSize -= 1
             self.gridArray.clear()
-            self.gridArray = [[False for x in range(self.gsize)] for y in range(self.gsize)]
-            self.pickleSave("grid.pickle")
+            self.gridArray = [[False for x in range(self.gridSize)] for y in range(self.gridSize)]
+            self.pickleSave()
    
-    def pickleSave(self, filename):
-        pickleData = { "obstacles" : self.gridArray, "size" : self.gsize }
-        try:
-            with open(filename, "wb") as file:
-                pickle.dump(pickleData, file)
-                print("saved to ", filename, ".pickle")
-        except FileNotFoundError:
-            print("File", filename, "does not exist.")
+    def pickleSave(self):
+        pickleData = { "obstacles" : self.gridArray, "size" : self.gridSize }
+        with open("grid.pickle", "wb") as file:
+            pickle.dump(pickleData, file)
+            print("saved to ", file.name)
 
-    def pickleLoad(self, filename):
+    def pickleLoad(self):
         try:
-            with open(filename, "rb") as file:
+            with open("grid.pickle", "rb") as file:
                 data = pickle.load(file)
-                self.gsize = data["size"]
+                self.gridSize = data["size"]
                 self.gridArray = data["obstacles"]
         except FileNotFoundError:
-            print("File", filename, "does not exist.")
+            print("File grid.pickle does not exist yet.")
 
     def draw(self):
-        for i in range(self.gsize + 1):
+        for i in range(self.gridSize + 1): # draw grid lines
             self.tur.penup()
-            self.tur.goto(-(SCREEN_WIDTH / 2), (i * 500 / self.gsize) - 250)
+            self.tur.goto(-(SCREEN_WIDTH / 2), (i * 500 / self.gridSize) - 250)
             self.tur.setheading(0)
             self.tur.pendown()
             self.tur.fd(SCREEN_WIDTH)
             self.tur.penup()
-            self.tur.goto((i * 500 / self.gsize) - 250, SCREEN_HEIGHT / 2)
+            self.tur.goto((i * 500 / self.gridSize) - 250, SCREEN_HEIGHT / 2)
             self.tur.setheading(270)
             self.tur.pendown()
             self.tur.fd(SCREEN_HEIGHT)
-            self.tur.penup()
+            
             ycoord = 0
             rowCount = 0
             for x in self.gridArray:
@@ -86,44 +72,41 @@ class Grid:
                 if rowCount == 1:
                     ycoord += SCREEN_HEIGHT / 2
                 else:
-                    ycoord -= SCREEN_HEIGHT / self.gsize
+                    ycoord -= SCREEN_HEIGHT / self.gridSize
                 for y in x:
-                    xcoord += SCREEN_WIDTH / self.gsize
+                    xcoord += SCREEN_WIDTH / self.gridSize
                     if y:
+                        self.tur.penup()
                         self.tur.goto(xcoord, ycoord)
                         self.tur.pendown()
                         self.tur.begin_fill()
                         for d in range(4):
-                            self.tur.forward(SCREEN_WIDTH / self.gsize)
+                            self.tur.forward(SCREEN_WIDTH / self.gridSize)
                             self.tur.right(90)
                         self.tur.end_fill()
-                        self.tur.penup()
                 
     def gridCoords(self, xcoord, ycoord):
-        for y in range(self.gsize):
-            for x in range(self.gsize):
+        for y in range(self.gridSize):
+            for x in range(self.gridSize):
                 if x == xcoord and y == ycoord:
                     self.gridArray[y][x] = not self.gridArray[y][x]
-        for row in self.gridArray:
-            print(row)
 
     def handleClick(self, x, y):
         if not self.enabled:
             return
-        n = self.gsize
+        n = self.gridSize
         m = SCREEN_WIDTH / n
         w = SCREEN_HEIGHT / n
-        x+=(SCREEN_WIDTH/2)
-        y-=(SCREEN_HEIGHT/2)
-        y*=-1
+        x = x + (SCREEN_WIDTH/2)
+        y = (y - (SCREEN_HEIGHT/2) ) * -1
         self.gridCoords(math.floor(x/m), math.floor(y/w))
-        print("Clicked at", x, y)
-        self.pickleSave("grid.pickle")
+        self.pickleSave()
     
     def gridTick(self):
         self.tur.clear()
         if self.enabled:
             self.draw()
+
 class Bullet:
     def __init__(self, x, y, rot, color):
         self.tur = turtle.Turtle()
@@ -139,10 +122,10 @@ class Bullet:
         self.firing = True
 
     def spdx(self, rot, spd):
-        return cos(radians(rot))*spd
+        return math.cos(math.radians(rot))*spd
    
     def spdy(self, rot, spd):
-        return sin(radians(rot))*spd
+        return math.sin(math.radians(rot))*spd
 
     def draw(self):
         self.tur.penup()
@@ -154,7 +137,7 @@ class Bullet:
     def distTank(self, posx, posy, tank):
         xterm = (posx-tank.posx)**2
         yterm = (posy-tank.posy)**2
-        return sqrt(xterm+yterm)
+        return math.sqrt(xterm+yterm)
 
     def screenCollision(self):
         rightbound = (SCREEN_WIDTH/2)-(self.size*2)
@@ -184,16 +167,16 @@ class Bullet:
     def obstacleCollision(self, grid):
         if grid.enabled:
             gridArray = grid.getGridArray()
-            gSize = grid.getGsize()
-            for y in range(gSize):
+            gridSize = grid.getgridSize()
+            for y in range(gridSize):
                 row = gridArray[y]
-                for x in range(gSize):
+                for x in range(gridSize):
                     box = row[x]
                     if box:
-                        boxLB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x)) - self.size
-                        boxRB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x+1)) + self.size
-                        boxTB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y)) + self.size
-                        boxBB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y+1)) - self.size
+                        boxLB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gridSize)*(x)) - self.size
+                        boxRB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gridSize)*(x+1)) + self.size
+                        boxTB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gridSize)*(y)) + self.size
+                        boxBB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gridSize)*(y+1)) - self.size
                         test = [boxLB, boxRB, boxTB, boxBB]
                         if self.posx > boxLB and self.posx < boxRB and self.posy > boxBB and self.posy < boxTB:
                             return True
@@ -251,10 +234,10 @@ class Tank:
    
     # util functions for speed of tank and bullet
     def spdx(self, rot, spd):
-        return cos(radians(rot))*spd
+        return math.cos(math.radians(rot))*spd
    
     def spdy(self, rot, spd):
-        return sin(radians(rot))*spd
+        return math.sin(math.radians(rot))*spd
    
     # functions to rotate right and left
     def rotR(self):
@@ -308,17 +291,17 @@ class Tank:
     def distTank(self, tank):
         xterm = (self.posx-tank.posx)**2
         yterm = (self.posy-tank.posy)**2
-        return sqrt(xterm+yterm)
+        return math.sqrt(xterm+yterm)
 
     def rotTank(self, tank):
         xterm = self.posx-tank.posx
         yterm = self.posy-tank.posy
-        return degrees(atan2(yterm, xterm)+radians(180))
+        return math.degrees(math.atan2(yterm, xterm)+math.radians(180))
 
     def rotCollisionTank(self, tank):
         xterm = self.posx-tank.posx
         yterm = self.posy-tank.posy
-        return degrees(atan2(yterm, xterm))
+        return math.degrees(math.atan2(yterm, xterm))
 
     # checks if tank is hitting anything every tick
     def collisionTickCheck(self, AllTanks, grid):
@@ -347,36 +330,35 @@ class Tank:
                 
         #Check for obstacle collision
         if grid.enabled:
-            gridArray = grid.getGridArray()
-            gSize = grid.getGsize()
-            for y in range(gSize):
+            gridArray = grid.gridArray
+            gridSize = grid.gridSize
+            for y in range(gridSize):
                 row = gridArray[y]
-                for x in range(gSize):
+                for x in range(gridSize):
                     box = row[x]
                     if box:
-                        boxLB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x)) - self.size
-                        boxRB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gSize)*(x+1)) + self.size
-                        boxTB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y)) + self.size
-                        boxBB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gSize)*(y+1)) - self.size
+                        boxLB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gridSize)*(x)) - self.size
+                        boxRB = -(SCREEN_WIDTH/2) + ((SCREEN_WIDTH/gridSize)*(x+1)) + self.size
+                        boxTB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gridSize)*(y)) + self.size
+                        boxBB = (SCREEN_HEIGHT/2) - ((SCREEN_HEIGHT/gridSize)*(y+1)) - self.size
                         test = [boxLB, boxRB, boxTB, boxBB]
                         if self.posx > boxLB and self.posx < boxRB and self.posy > boxBB and self.posy < boxTB:
-                            print("In Box", x, y)
                             dist = 100
                             xaxis = False
                             yaxis = False
                             pos = 0
-                            for dummy in range(len(test)):
-                                if dummy < 2:
-                                    hold = abs(test[dummy] - self.posx)
+                            for i in range(len(test)):
+                                if i < 2:
+                                    hold = abs(test[i] - self.posx)
                                     if hold < dist:
-                                        dist = abs(test[dummy] - self.posx)
-                                        pos = test[dummy]
+                                        dist = abs(test[i] - self.posx)
+                                        pos = test[i]
                                         xaxis = True
                                 else:
-                                    hold = abs(test[dummy] - self.posy)
+                                    hold = abs(test[i] - self.posy)
                                     if hold < dist:
-                                        dist = abs(test[dummy] - self.posy)
-                                        pos = test[dummy]
+                                        dist = abs(test[i] - self.posy)
+                                        pos = test[i]
                                         yaxis = True
                             if xaxis and not yaxis:
                                 self.posx = pos
@@ -408,8 +390,8 @@ class Tank:
             self.rot += self.rotspd
         if self.driving:
             spd = self.basespd * len(AllTanks)
-            self.posx += cos(radians(self.rot))*spd
-            self.posy += sin(radians(self.rot))*spd
+            self.posx += math.cos(math.radians(self.rot))*spd
+            self.posy += math.sin(math.radians(self.rot))*spd
         if self.cooldown > 0:
             self.cooldown -= 1
         # print(self.bullets)
@@ -419,7 +401,7 @@ class Tank:
                 if not bullet.firing:
                     self.bullets.remove(bullet)
         self.collisionTickCheck(AllTanks, grid)
-        tanksDist, tanksOrder = self.sortDistAI(AllTanks)
+        # tanksDist, tanksOrder = self.sortDistAI(AllTanks)
         #print("Tanks in Distance Order")
         #for i in range(len(tanksDist)):
             #print(tanksOrder[i], tanksDist[i])
@@ -464,8 +446,8 @@ class TankAI(Tank):
         self.AI_drive(player)
         if self.driving:
             spd = self.basespd * len(AllTanks)
-            self.posx += cos(radians(self.rot))*spd
-            self.posy += sin(radians(self.rot))*spd
+            self.posx += math.cos(math.radians(self.rot))*spd
+            self.posy += math.sin(math.radians(self.rot))*spd
         self.collisionTickCheck(AllTanks, grid)
         self.draw()
 
